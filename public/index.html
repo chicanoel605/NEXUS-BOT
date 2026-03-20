@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexusBot — WhatsApp Pairing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── RESET & BASE ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #030508;
+      --bg2: #080d14;
+      --surface: #0c1420;
+      --border: #1a2d4a;
+      --border-glow: #0e4f8a;
+      --accent: #00d4ff;
+      --accent2: #7b2fff;
+      --accent3: #00ff9d;
+      --text: #c8ddf5;
+      --text-dim: #4a6a8a;
+      --danger: #ff3e6c;
+      --success: #00ff9d;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ── ANIMATED BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0, 212, 255, 0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(123, 47, 255, 0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 50% 50%, rgba(0, 255, 157, 0.03) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── GRID OVERLAY ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .container {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 60px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+      animation: fadeDown 0.8s ease both;
+    }
+
+    .logo-ring {
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+
+    .logo-ring svg {
+      width: 100%;
+      height: 100%;
+      animation: spin 8s linear infinite;
+    }
+
+    .logo-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .brand {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+
+    /* ── CARD ── */
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: linear-gradient(145deg, var(--surface) 0%, var(--bg2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 36px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.8s ease 0.2s both;
+      box-shadow:
+        0 0 0 1px rgba(0,212,255,0.05),
+        0 20px 60px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), var(--accent3), transparent);
+      animation: shimmer 3s linear infinite;
+    }
+
+    /* ── STEPS ── */
+    .steps {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      justify-content: center;
+    }
+
+    .step {
+      width: 28px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      transition: all 0.4s ease;
+    }
+
+    .step.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .step.done { background: var(--accent3); }
+
+    /* ── SECTION TITLE ── */
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border-glow), transparent);
+    }
+
+    /* ── INPUT GROUP ── */
+    .input-group {
+      margin-bottom: 24px;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      letter-spacing: 0.05em;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-flag {
+      position: absolute;
+      left: 14px;
+      font-size: 1.2rem;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .phone-input {
+      width: 100%;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px 14px 46px;
+      font-family: 'Space Mono', monospace;
+      font-size: 1rem;
+      color: var(--text);
+      outline: none;
+      transition: all 0.3s ease;
+      letter-spacing: 0.05em;
+    }
+
+    .phone-input::placeholder { color: var(--text-dim); font-size: 0.85rem; }
+
+    .phone-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1), 0 0 20px rgba(0,212,255,0.05);
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── BUTTON ── */
+    .btn-pair {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #0070b8, #4a1a9e);
+      border: none;
+      border-radius: 12px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: #fff;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .btn-pair::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .btn-pair:hover::before { opacity: 1; }
+    .btn-pair:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,255,0.3); }
+    .btn-pair:active { transform: translateY(0); }
+
+    .btn-pair span { position: relative; z-index: 1; }
+
+    .btn-pair.loading {
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    .btn-pair .spinner {
+      display: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-pair.loading .btn-text { display: none; }
+    .btn-pair.loading .spinner { display: inline-block; }
+
+    /* ── RESULT PANEL ── */
+    .result-panel {
+      margin-top: 28px;
+      display: none;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .result-panel.show { display: block; }
+
+    .code-display {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-display::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(0,212,255,0.05) 0%, transparent 70%);
+    }
+
+    .code-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .code-value {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(1.8rem, 6vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--accent3);
+      text-shadow: 0 0 20px rgba(0,255,157,0.4);
+      position: relative;
+      z-index: 1;
+    }
+
+    .copy-btn {
+      margin-top: 16px;
+      padding: 8px 20px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 0.1em;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 10px rgba(0,212,255,0.2);
+    }
+
+    .copy-btn.copied {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    /* ── INSTRUCTIONS ── */
+    .instructions {
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(0,255,157,0.04);
+      border: 1px solid rgba(0,255,157,0.15);
+      border-radius: 10px;
+    }
+
+    .instructions-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent3);
+      margin-bottom: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .instructions ol {
+      padding-left: 16px;
+    }
+
+    .instructions li {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+
+    .instructions li strong { color: var(--text); }
+
+    /* ── ERROR ── */
+    .error-msg {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(255,62,108,0.08);
+      border: 1px solid rgba(255,62,108,0.3);
+      border-radius: 10px;
+      font-size: 0.82rem;
+      color: var(--danger);
+      display: none;
+    }
+
+    .error-msg.show { display: block; }
+
+    /* ── FEATURES ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 40px;
+      width: 100%;
+      max-width: 480px;
+      animation: fadeUp 0.8s ease 0.4s both;
+    }
+
+    .feature {
+      background: rgba(12,20,32,0.8);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .feature:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .feature-icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .feature-label {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      margin-top: 50px;
+      text-align: center;
+      animation: fadeUp 0.8s ease 0.6s both;
+    }
+
+    .footer-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.15em;
+    }
+
+    .footer-text span { color: var(--accent); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    @keyframes shimmer {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(100%); }
+    }
+
+    @keyframes dotPulse {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ── LOADING DOTS ── */
+    .dot-loader {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .dot-loader span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: white;
+      animation: dotPulse 1.4s ease-in-out infinite;
+    }
+
+    .dot-loader span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-loader span:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .card { padding: 30px 20px; }
+      .features { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .feature { padding: 12px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header>
+      <div class="logo-ring">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="45" stroke="url(#grad1)" stroke-width="1.5" stroke-dasharray="8 4" />
+          <circle cx="50" cy="50" r="36" stroke="url(#grad2)" stroke-width="1" opacity="0.5" />
+          <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00d4ff"/>
+              <stop offset="50%" stop-color="#7b2fff"/>
+              <stop offset="100%" stop-color="#00ff9d"/>
+            </linearGradient>
+            <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00ff9d"/>
+              <stop offset="100%" stop-color="#00d4ff"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="logo-icon">⚡</div>
+      </div>
+      <div class="brand">NEXUSBOT</div>
+      <div class="tagline">WhatsApp AI Bot · Pairing Portal</div>
+    </header>
+
+    <!-- MAIN CARD -->
+    <div class="card">
+      <div class="steps">
+        <div class="step active" id="step1"></div>
+        <div class="step" id="step2"></div>
+        <div class="step" id="step3"></div>
+      </div>
+
+      <div class="section-label">Connect Your Number</div>
+
+      <div class="input-group">
+        <label class="input-label" for="phone">WhatsApp Phone Number</label>
+        <div class="input-wrapper">
+          <span class="input-flag">📱</span>
+          <input
+            type="tel"
+            id="phone"
+            class="phone-input"
+            placeholder="2348012345678  (with country code)"
+            autocomplete="tel"
+            inputmode="numeric"
+          />
+        </div>
+        <div class="hint">
+          <span>ℹ️</span>
+          Include country code without + or spaces. E.g: 2348012345678
+        </div>
+      </div>
+
+      <button class="btn-pair" id="pairBtn" onclick="generateCode()">
+        <span class="btn-text">⚡ &nbsp;GENERATE PAIRING CODE</span>
+        <span class="spinner">
+          <div class="dot-loader">
+            <span></span><span></span><span></span>
+          </div>
+        </span>
+      </button>
+
+      <!-- ERROR -->
+      <div class="error-msg" id="errorMsg"></div>
+
+      <!-- RESULT PANEL -->
+      <div class="result-panel" id="resultPanel">
+        <div class="code-display">
+          <div class="code-label">🔐 Your Pairing Code</div>
+          <div class="code-value" id="codeValue">----</div>
+          <br/>
+          <button class="copy-btn" id="copyBtn" onclick="copyCode()">📋 &nbsp;COPY CODE</button>
+        </div>
+
+        <div class="instructions">
+          <div class="instructions-title">📋 How to Link</div>
+          <ol>
+            <li>Open <strong>WhatsApp</strong> on your phone</li>
+            <li>Tap the <strong>three dots (⋮)</strong> → <strong>Linked Devices</strong></li>
+            <li>Tap <strong>"Link with phone number"</strong></li>
+            <li>Enter the code above: <strong id="codeHint">----</strong></li>
+            <li>✅ Done! Your bot is now connected.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURES -->
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🤖</div>
+        <div class="feature-label">GPT-4o AI</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">👥</div>
+        <div class="feature-label">Group Mgmt</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🛠️</div>
+        <div class="feature-label">Smart Tools</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-text">
+        Powered by <span>NexusBot</span> · Built with Baileys + OpenAI
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    let generatedCode = '';
+
+    async function generateCode() {
+      const phone = document.getElementById('phone').value.trim().replace(/[^0-9]/g, '');
+      const btn = document.getElementById('pairBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      const resultPanel = document.getElementById('resultPanel');
+
+      // Reset UI
+      errorMsg.classList.remove('show');
+      resultPanel.classList.remove('show');
+
+      if (!phone || phone.length < 10) {
+        showError('Please enter a valid phone number with country code.');
+        shake(document.getElementById('phone'));
+        return;
+      }
+
+      // Loading state
+      btn.classList.add('loading');
+      updateSteps(2);
+
+      try {
+        const response = await fetch('/api/pair', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to generate code.');
+        }
+
+        generatedCode = data.code;
+        document.getElementById('codeValue').textContent = data.code;
+        document.getElementById('codeHint').textContent = data.code;
+        resultPanel.classList.add('show');
+        updateSteps(3);
+
+        // Scroll to result
+        resultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      } catch (err) {
+        showError(err.message || 'Something went wrong. Please try again.');
+        updateSteps(1);
+      } finally {
+        btn.classList.remove('loading');
+      }
+    }
+
+    function copyCode() {
+      if (!generatedCode) return;
+      navigator.clipboard.writeText(generatedCode).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '✅  COPIED!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = '📋  COPY CODE';
+          btn.classList.remove('copied');
+        }, 2500);
+      });
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = '❌ ' + msg;
+      el.classList.add('show');
+    }
+
+    function updateSteps(active) {
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('step' + i);
+        el.className = 'step';
+        if (i < active) el.classList.add('done');
+        else if (i === active) el.classList.add('active');
+      }
+    }
+
+    function shake(el) {
+      el.style.animation = 'none';
+      el.offsetHeight; // reflow
+      el.style.borderColor = 'var(--danger)';
+      el.style.boxShadow = '0 0 0 3px rgba(255,62,108,0.2)';
+      setTimeout(() => {
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+      }, 1500);
+    }
+
+    // Enter key support
+    document.getElementById('phone').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') generateCode();
+    });
+  </script>
+</body>
+  </html>
+  
